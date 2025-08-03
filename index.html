@@ -3,22 +3,109 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Focus Coach - AI-Powered Focus Sessions</title>
-    <meta name="description" content="AI-powered focus coach with live webcam, voice prompts, and 25-minute productivity sessions. Stay focused and boost your productivity." />
+    <title>Pomodoro.site - AI-Powered Focus Sessions</title>
+    <meta
+      name="description"
+      content="AI-powered pomodoro timer with live webcam, voice prompts, and customizable focus sessions. Stay focused and boost your productivity."
+    />
     <meta name="author" content="Focus Coach" />
 
-    <meta property="og:title" content="Focus Coach - AI-Powered Focus Sessions" />
-    <meta property="og:description" content="AI-powered focus coach with live webcam, voice prompts, and 25-minute productivity sessions." />
+    <meta
+      property="og:title"
+      content="Pomodoro.site - AI-Powered Focus Sessions"
+    />
+    <meta
+      property="og:description"
+      content="AI-powered pomodoro timer with live webcam, voice prompts, and customizable focus sessions."
+    />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta
+      property="og:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta
+      name="twitter:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Pomodoro.site" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/placeholder.svg" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/placeholder.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/placeholder.svg" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/placeholder.svg" />
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WE55ND94VB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-WE55ND94VB');
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
+    
+    <!-- MediaPipe Scripts - Load before React -->
+    <script 
+      src="https://unpkg.com/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" 
+      crossorigin="anonymous"
+      onload="console.log('✅ Camera Utils loaded')"
+      onerror="console.error('❌ Camera Utils failed to load')"
+    ></script>
+    <script 
+      src="https://unpkg.com/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" 
+      crossorigin="anonymous"
+      onload="console.log('✅ Face Mesh loaded')"
+      onerror="console.error('❌ Face Mesh failed to load')"
+    ></script>
+    
+    <!-- Debug MediaPipe availability -->
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          console.log('🔍 MediaPipe availability check:');
+          console.log('- FaceMesh:', typeof window.FaceMesh);
+          console.log('- Camera:', typeof window.Camera);
+          console.log('- window.FaceMesh:', window.FaceMesh);
+          console.log('- window.Camera:', window.Camera);
+        }, 1000);
+      });
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log("SW registered: ", registration);
+            })
+            .catch((registrationError) => {
+              console.log("SW registration failed: ", registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

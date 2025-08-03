@@ -1,99 +1,127 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState, useEffect } from "react";
 
-interface VoicePromptsConfig {
-  elevenlabsApiKey?: string;
-  voiceId?: string;
+
+interface VoiceSettings {
+  rate: number;
+  pitch: number;
+  volume: number;
+  voice?: SpeechSynthesisVoice;
 }
 
-export const useVoicePrompts = (config?: VoicePromptsConfig) => {
+export const useVoicePrompts = () => {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const isPlayingRef = useRef(false);
+  const [availableVoices, setAvailableVoices] = useState<
+    SpeechSynthesisVoice[]
+  >([]);
+  const [selectedVoice, setSelectedVoice] =
+    useState<SpeechSynthesisVoice | null>(null);
 
-  const speakWithElevenLabs = useCallback(async (text: string) => {
-    if (!config?.elevenlabsApiKey) {
-      // Fallback to Web Speech API if no ElevenLabs key
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.1;
-        utterance.volume = 0.8;
-        speechSynthesis.speak(utterance);
+  // En iyi İngilizce sesleri bul
+  const getBestEnglishVoice = useCallback(() => {
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoices = voices.filter(
+      (voice) =>
+        voice.lang.startsWith("en") &&
+        (voice.name.includes("Google") ||
+          voice.name.includes("Samantha") ||
+          voice.name.includes("Alex"))
+    );
+
+    // Öncelik sırası: Google > Samantha > Alex > İlk İngilizce ses
+    const preferredVoice =
+      englishVoices.find((voice) => voice.name.includes("Google")) ||
+      englishVoices.find((voice) => voice.name.includes("Samantha")) ||
+      englishVoices.find((voice) => voice.name.includes("Alex")) ||
+      englishVoices[0];
+
+    return (
+      preferredVoice ||
+      voices.find((voice) => voice.lang.startsWith("en")) ||
+      voices[0]
+    );
+  }, []);
+
+  // Sesleri yükle
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setAvailableVoices(voices);
+      setSelectedVoice(getBestEnglishVoice());
+    };
+
+    if ("speechSynthesis" in window) {
+      // Sesler yüklendiğinde
+      if (window.speechSynthesis.getVoices().length > 0) {
+        loadVoices();
+      } else {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
       }
-      return;
     }
+  }, [getBestEnglishVoice]);
 
-    try {
-      const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + (config.voiceId || 'EXAVITQu4vr4xnSDxMaL'), {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': config.elevenlabsApiKey,
-        },
-        body: JSON.stringify({
-          text,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.5,
-          },
-        }),
-      });
+  const speakWithWebSpeech = useCallback(
+    (text: string, settings?: Partial<VoiceSettings>) => {
+      if (!("speechSynthesis" in window)) return;
 
-      if (!response.ok) {
-        throw new Error('ElevenLabs API error');
-      }
+      // Mevcut konuşmayı durdur
+      window.speechSynthesis.cancel();
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      // Stop any currently playing audio
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-      }
+      const utterance = new SpeechSynthesisUtterance(text);
 
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
-      isPlayingRef.current = true;
+      // Varsayılan ayarlar - daha insansı
+      utterance.rate = settings?.rate ?? 0.85; // Biraz yavaş
+      utterance.pitch = settings?.pitch ?? 1.05; // Hafif yüksek ton
+      utterance.volume = settings?.volume ?? 0.9; // Yüksek ses
+      utterance.voice =
+        settings?.voice ?? selectedVoice ?? getBestEnglishVoice();
 
-      audio.onended = () => {
-        isPlayingRef.current = false;
-        URL.revokeObjectURL(audioUrl);
+      // Daha doğal konuşma için ayarlar
+      utterance.onstart = () => {
+        isPlayingRef.current = true;
       };
 
-      await audio.play();
-    } catch (error) {
-      console.error('Voice synthesis failed:', error);
-      // Fallback to Web Speech API
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.1;
-        utterance.volume = 0.8;
-        speechSynthesis.speak(utterance);
-      }
-    }
-  }, [config?.elevenlabsApiKey, config?.voiceId]);
+      utterance.onend = () => {
+        isPlayingRef.current = false;
+      };
+
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
+        isPlayingRef.current = false;
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [selectedVoice, getBestEnglishVoice]
+  );
+
 
   const stopSpeaking = useCallback(() => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
-    
-    if ('speechSynthesis' in window) {
-      speechSynthesis.cancel();
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
-    
+
     isPlayingRef.current = false;
   }, []);
 
   const isPlaying = () => isPlayingRef.current;
 
+  const changeVoice = useCallback((voice: SpeechSynthesisVoice) => {
+    setSelectedVoice(voice);
+  }, []);
+
   return {
-    speak: speakWithElevenLabs,
+    speak: speakWithWebSpeech,
+    speakWithWebSpeech,
     stopSpeaking,
     isPlaying,
+    availableVoices,
+    selectedVoice,
+    changeVoice,
   };
 };

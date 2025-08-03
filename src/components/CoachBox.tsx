@@ -50,59 +50,52 @@ const avatarAnimation = {
 };
 
 export const CoachBox = ({ message, isVisible, userName, sessionStats }: CoachBoxProps) => {
-  const [currentMessage, setCurrentMessage] = useState(message);
+  const [displayMessage, setDisplayMessage] = useState(message || "Welcome!");
   
   useEffect(() => {
-    if (message !== currentMessage) {
-      // Delay message update to sync with animation
-      const timer = setTimeout(() => {
-        setCurrentMessage(message);
-      }, 150);
-      return () => clearTimeout(timer);
+    if (message && message.trim()) {
+      setDisplayMessage(message);
     }
-  }, [message, currentMessage]);
+  }, [message]);
 
-  if (!isVisible) return null;
+  // Always show the box, just change opacity
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.8, y: 20 }}
-      className="fixed bottom-6 right-6 z-50"
-    >
-      <div className="bg-glass-bg backdrop-blur-lg border border-glass-border rounded-xl p-6 max-w-sm shadow-2xl">
-        <div className="flex items-start space-x-4">
+    <div className="fixed bottom-4 right-4 left-4 sm:bottom-6 sm:right-6 sm:left-auto z-50">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className={`transition-all duration-300 ${
+          isVisible ? 'opacity-100 scale-100' : 'opacity-30 scale-95'
+        }`}
+      >
+      <div className="bg-glass-bg backdrop-blur-lg border border-glass-border rounded-xl p-4 sm:p-6 max-w-sm mx-auto sm:mx-0 shadow-2xl">
+        <div className="flex items-start space-x-3 sm:space-x-4">
           {/* Avatar */}
           <div className="flex-shrink-0">
-            <div className="w-16 h-16 bg-gradient-to-br from-coach-blue to-coach-green rounded-full flex items-center justify-center">
-              <div className="w-12 h-12 bg-foreground rounded-full flex items-center justify-center">
-                <div className="w-8 h-8 bg-coach-blue rounded-full animate-pulse"></div>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-coach-blue to-coach-green rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-foreground rounded-full flex items-center justify-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-coach-blue rounded-full animate-pulse"></div>
               </div>
             </div>
           </div>
           
           {/* Message */}
           <div className="flex-1 min-w-0">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={currentMessage}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="text-foreground text-sm leading-relaxed font-medium"
-              >
-                {currentMessage}
-              </motion.p>
-            </AnimatePresence>
+            <p className="text-foreground text-xs sm:text-sm leading-relaxed font-medium">
+              {displayMessage}
+            </p>
           </div>
         </div>
         
         {/* Decorative elements */}
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-coach-green rounded-full animate-ping"></div>
+        <div className={`absolute -top-1 -right-1 w-3 h-3 bg-coach-green rounded-full ${
+          isVisible ? 'animate-ping' : ''
+        }`}></div>
         <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-coach-blue rounded-full animate-pulse"></div>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
